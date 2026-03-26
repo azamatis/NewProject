@@ -4,23 +4,24 @@ class AutoLockBluePanel:
     def __init__(self, root):
         self.root = root
         self.root.title("Auto-Lock Secure Panel")
-        self.root.geometry("350x520") # Adjusted height since button is gone
+        self.root.geometry("350x550") 
         
-        self.bg_color = "#0095ff"  # Deep Blue
+        # Brighter Blue Background
+        self.bg_color = "#0095ff"  
         self.root.configure(bg=self.bg_color)
 
         self.pin = ""
         self.correct_pin = "1234"
         self.is_open = False
 
-        # 1. TOP STATUS INDICATOR (Rectangular Shape)
-        self.indicator = tk.Label(root, text="Door locked", font=("Arial", 16, "bold"),
+        # 1. TOP STATUS INDICATOR
+        self.indicator = tk.Label(root, text="Door Locked", font=("Arial", 16, "bold"),
                                  bg="#00264C", fg="#ff4d4d", height=3, width=30)
         self.indicator.pack(pady=20)
 
-        # 2. PIN DISPLAY SCREEN
-        self.display = tk.Label(root, text=" ", font=("Courier", 30),
-                               bg="#00509d", fg="#00ff00", width=10)
+        # 2. PIN DISPLAY SCREEN (Centered dots)
+        self.display = tk.Label(root, text="----", font=("Courier", 30),
+                               bg="#00509d", fg="#00ff00", width=10, anchor="center")
         self.display.pack(pady=10)
 
         # 3. KEYPAD GRID
@@ -43,7 +44,7 @@ class AutoLockBluePanel:
                 r += 1
 
     def handle_press(self, key):
-        if self.is_open: return # Ignore keys while door is already open
+        if self.is_open: return 
 
         if key == 'CLR':
             self.pin = ""
@@ -51,7 +52,7 @@ class AutoLockBluePanel:
             if self.pin == self.correct_pin:
                 self.unlock_sequence()
             else:
-                self.indicator.config(text="ACCESS DENIED", bg="red", fg="white")
+                self.indicator.config(text="ACCESS DENIED", bg="#ff0000", fg="white")
                 self.root.after(1000, self.lock_system)
             self.pin = ""
         elif len(self.pin) < 4:
@@ -63,13 +64,12 @@ class AutoLockBluePanel:
         self.is_open = True
         self.indicator.config(text="DOOR OPEN", bg="#00ff00", fg="#004d00")
         print("[GPIO] Relay open")
-        
-        # --- THE 4 SECOND AUTO-LOCK TIMER ---
         self.root.after(4000, self.lock_system)
 
     def lock_system(self):
         self.is_open = False
-        self.indicator.config(text="Door Locked", bg="#c7ab81", fg="#ff4d4d")
+        # Returning to the Deep Dark Blue theme for Locked state
+        self.indicator.config(text="Door Locked", bg="#00264C", fg="#ff4d4d")
         print("[GPIO] Relay closed")
 
 # Start the application
