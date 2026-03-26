@@ -1,69 +1,60 @@
 import tkinter as tk
 from tkinter import messagebox
-from cryptography.fernet import Fernet
 
-# --- SMART HARDWARE SWITCH ---
-try:
-    import RPi.GPIO as GPIO
-    IS_PI = True
-    DOOR_PIN = 18 
-    GPIO.setmode(GPIO.BCM)
-    GPIO.setup(DOOR_PIN, GPIO.OUT)
-except (ImportError, RuntimeError):
-    # This part runs if you are on Windows/Mac
-    IS_PI = False
-    print("Running in SIMULATION MODE (No Raspberry Pi detected)")
-
-# --- SECURITY SETUP ---
-key = Fernet.generate_key()
-cipher_suite = Fernet(key)
-CORRECT_PIN = "1234" 
-
-class PiDoorApp:
+class SimpleKeypad:
     def __init__(self, root):
         self.root = root
-        self.root.title("Secure Entry (Simulated)")
-        self.root.geometry("400x350")
-
-        tk.Label(root, text="ENTER SECURITY PIN", font=("Arial", 14)).pack(pady=10)
-        self.entry = tk.Entry(root, show="*", font=("Arial", 18), justify='center')
-        self.entry.pack(pady=10)
-
-        self.status = tk.Label(root, text="STATUS: LOCKED", fg="red", font=("Arial", 16, "bold"))
-        self.status.pack(pady=20)
-
-        self.unlock_btn = tk.Button(root, text="UNLOCK DOOR", bg="green", fg="white", 
-                                   height=2, width=20, command=self.handle_auth)
-        self.unlock_btn.pack(pady=10)
-
-    def handle_auth(self):
-        if self.entry.get() == CORRECT_PIN:
-            self.entry.delete(0, tk.END)
-            self.set_door_state("OPEN")
-            self.root.after(5000, lambda: self.set_door_state("CLOSE"))
-        else:
-            messagebox.showerror("Error", "Wrong PIN")
-            self.entry.delete(0, tk.END)
-
-    def set_door_state(self, state):
-        msg = cipher_suite.encrypt(state.encode())
-        command = cipher_suite.decrypt(msg).decode()
+        self.root.title("Keypad Test")
+        self.root.geometry("300x450") # Fixed size
         
-        if command == "OPEN":
-            if IS_PI: GPIO.output(DOOR_PIN, GPIO.HIGH)
-            self.status.config(text="STATUS: UNLOCKED", fg="green")
-            self.unlock_btn.config(state="disabled")
-            print("[EVENT] Door Opened")
+        self.code = ""
+        
+        # 1. THE DISPLAY (Shows dots)
+        self.label = tk.Label(root, text="ENTER PIN", font=("Arial", 18), pady=20)
+        self.label.pack()
+
+        # 2. THE BUTTON HOLDER (The Frame)
+        self.frame = tk.Frame(root)
+        self.frame.pack(pady=10)
+
+        # 3. CREATE BUTTONS 1-9
+        buttons = [
+            '1', '2', '3',
+            '4', '5', '6',
+            '7', '8', '9',
+            'C', '0', 'OK'
+        ]
+
+        row = 0
+        col = 0
+        for b in buttons:
+            # This creates the button and places it in the grid
+            cmd = lambda x=b: self.press(x)
+            tk.Button(self.frame, text=b, width=8, height=3, 
+                      command=cmd, bg="#eeeeee").grid(row=row, column=col, padx=2, pady=2)
+            
+            col += 1
+            if col > 2:
+                col = 0
+                row += 1
+
+    def press(self, key):
+        if key == 'C':
+            self.code = ""
+        elif key == 'OK':
+            if self.code == "1234":
+                messagebox.showinfo("Success", "Door Unlocked!")
+            else:
+                messagebox.showerror("Denied", "Wrong PIN")
+            self.code = ""
         else:
-            if IS_PI: GPIO.output(DOOR_PIN, GPIO.LOW)
-            self.status.config(text="STATUS: LOCKED", fg="red")
-            self.unlock_btn.config(state="normal")
-            print("[EVENT] Door Locked")
+            if len(self.code) < 4:
+                self.code += key
+        
+        # Update the screen
+        self.label.config(text="*" * len(self.code) if self.code else "ENTER PIN")
 
-# Start App
+# START
 root = tk.Tk()
-app = PiDoorApp(root)
+app = SimpleKeypad(root)
 root.mainloop()
-
-# Clean up only if on Pi
-if IS_PI: GPIO.cleanup()
