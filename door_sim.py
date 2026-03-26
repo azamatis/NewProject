@@ -1,60 +1,78 @@
 import tkinter as tk
-from tkinter import messagebox
 
-class SimpleKeypad:
+class AutoLockBluePanel:
     def __init__(self, root):
         self.root = root
-        self.root.title("Keypad Test")
-        self.root.geometry("300x450") # Fixed size
+        self.root.title("Auto-Lock Secure Panel")
+        self.root.geometry("350x520") # Adjusted height since button is gone
         
-        self.code = ""
-        
-        # 1. THE DISPLAY (Shows dots)
-        self.label = tk.Label(root, text="ENTER PIN", font=("Arial", 18), pady=20)
-        self.label.pack()
+        self.bg_color = "#0095ff"  # Deep Blue
+        self.root.configure(bg=self.bg_color)
 
-        # 2. THE BUTTON HOLDER (The Frame)
-        self.frame = tk.Frame(root)
-        self.frame.pack(pady=10)
+        self.pin = ""
+        self.correct_pin = "1234"
+        self.is_open = False
 
-        # 3. CREATE BUTTONS 1-9
-        buttons = [
-            '1', '2', '3',
-            '4', '5', '6',
-            '7', '8', '9',
-            'C', '0', 'OK'
-        ]
+        # 1. TOP STATUS INDICATOR (Rectangular Shape)
+        self.indicator = tk.Label(root, text="Door locked", font=("Arial", 16, "bold"),
+                                 bg="#00264C", fg="#ff4d4d", height=3, width=30)
+        self.indicator.pack(pady=20)
 
-        row = 0
-        col = 0
-        for b in buttons:
-            # This creates the button and places it in the grid
-            cmd = lambda x=b: self.press(x)
-            tk.Button(self.frame, text=b, width=8, height=3, 
-                      command=cmd, bg="#eeeeee").grid(row=row, column=col, padx=2, pady=2)
+        # 2. PIN DISPLAY SCREEN
+        self.display = tk.Label(root, text=" ", font=("Courier", 30),
+                               bg="#00509d", fg="#00ff00", width=10)
+        self.display.pack(pady=10)
+
+        # 3. KEYPAD GRID
+        self.grid_frame = tk.Frame(root, bg=self.bg_color)
+        self.grid_frame.pack(pady=20)
+
+        buttons = ['1','2','3','4','5','6','7','8','9','CLR','0','OK']
+        r, c = 0, 0
+        for btn in buttons:
+            btn_color = "#004080" 
+            if btn == 'CLR': btn_color = "#c0392b"
+            if btn == 'OK': btn_color = "#27ae60"
             
-            col += 1
-            if col > 2:
-                col = 0
-                row += 1
+            tk.Button(self.grid_frame, text=btn, width=8, height=3, 
+                      bg=btn_color, fg="white", font=("Arial", 10, "bold"),
+                      command=lambda x=btn: self.handle_press(x)).grid(row=r, column=c, padx=4, pady=4)
+            c += 1
+            if c > 2:
+                c = 0
+                r += 1
 
-    def press(self, key):
-        if key == 'C':
-            self.code = ""
+    def handle_press(self, key):
+        if self.is_open: return # Ignore keys while door is already open
+
+        if key == 'CLR':
+            self.pin = ""
         elif key == 'OK':
-            if self.code == "1234":
-                messagebox.showinfo("Success", "Door Unlocked!")
+            if self.pin == self.correct_pin:
+                self.unlock_sequence()
             else:
-                messagebox.showerror("Denied", "Wrong PIN")
-            self.code = ""
-        else:
-            if len(self.code) < 4:
-                self.code += key
+                self.indicator.config(text="ACCESS DENIED", bg="red", fg="white")
+                self.root.after(1000, self.lock_system)
+            self.pin = ""
+        elif len(self.pin) < 4:
+            self.pin += key
         
-        # Update the screen
-        self.label.config(text="*" * len(self.code) if self.code else "ENTER PIN")
+        self.display.config(text="*" * len(self.pin) if self.pin else "----")
 
-# START
+    def unlock_sequence(self):
+        self.is_open = True
+        self.indicator.config(text="DOOR OPEN", bg="#00ff00", fg="#004d00")
+        print("[GPIO] Relay open")
+        
+        # --- THE 4 SECOND AUTO-LOCK TIMER ---
+        self.root.after(4000, self.lock_system)
+
+    def lock_system(self):
+        self.is_open = False
+        self.indicator.config(text="Door Locked", bg="#c7ab81", fg="#ff4d4d")
+        print("[GPIO] Relay closed")
+
+# Start the application
 root = tk.Tk()
-app = SimpleKeypad(root)
+app = AutoLockBluePanel(root)
 root.mainloop()
