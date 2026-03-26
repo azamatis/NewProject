@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import messagebox
 import json
 import os
+import datetime # NEW: To record the exact time
 
 class MultiUserDoorPanel:
     def __init__(self, root):
@@ -35,6 +36,37 @@ class MultiUserDoorPanel:
         tk.Button(root, text="MANAGE USERS/PINS", bg="#34495e", fg="white",
                   font=("Arial", 10, "bold"), width=25, height=2,
                   command=self.open_admin_screen).pack(pady=15)
+        
+ 
+
+# ... inside your MultiUserDoorPanel class ...
+
+    def check_auth(self):
+        found_user = next((u for u, p in self.users.items() if p == self.input_buffer), None)
+        
+        if found_user:
+            self.current_user = found_user
+            self.is_open = True
+            self.indicator.config(text=f"WELCOME {found_user.upper()}", bg="#00ff00", fg="#004d00")
+            
+            # --- NEW: WRITE TO HISTORY LOG ---
+            self.log_activity(found_user)
+            
+            self.root.after(4000, self.lock_system)
+        else:
+            self.indicator.config(text="INVALID PIN", bg="red", fg="white")
+            self.root.after(1500, self.lock_system)
+        self.input_buffer = ""
+
+    def log_activity(self, user):
+        """Saves entry history to a text file"""
+        now = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_entry = f"[{now}] SUCCESS: User '{user}' unlocked the door.\n"
+        
+        with open("activity_log.txt", "a") as f: # "a" means Append (add to end)
+            f.write(log_entry)
+        print(log_entry.strip()) # Also show in terminal
+
 
     def load_database(self):
         """Loads users and pins from the second file"""
