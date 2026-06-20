@@ -37,10 +37,6 @@ class MultiUserDoorPanel:
                   font=("Arial", 10, "bold"), width=25, height=2,
                   command=self.open_admin_screen).pack(pady=15)
         
- 
-
-# ... inside your MultiUserDoorPanel class ...
-
     def check_auth(self):
         found_user = next((u for u, p in self.users.items() if p == self.input_buffer), None)
         
@@ -97,21 +93,6 @@ class MultiUserDoorPanel:
         elif key == 'OK': self.check_auth()
         elif len(self.input_buffer) < 4: self.input_buffer += key
         self.display.config(text="*" * len(self.input_buffer) if self.input_buffer else "----")
-
-    def check_auth(self):
-        # Check if the entered PIN exists for ANY user
-        found_user = next((u for u, p in self.users.items() if p == self.input_buffer), None)
-        
-        if found_user:
-            self.current_user = found_user
-            self.is_open = True
-            self.indicator.config(text=f"WELCOME {found_user.upper()}", bg="#00ff00", fg="#004d00")
-            print(f"[LOG] {found_user} opened the door")
-            self.root.after(4000, self.lock_system)
-        else:
-            self.indicator.config(text="INVALID PIN", bg="red", fg="white")
-            self.root.after(1500, self.lock_system)
-        self.input_buffer = ""
 
     def lock_system(self):
         self.is_open = False
